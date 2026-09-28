@@ -21,6 +21,10 @@ namespace NomisKitchenHDT.UI
             _config = config;
             _updater = updater;
 
+            ShareLogsCheck.IsChecked = _config.ShareGameLogs;
+            ShareLogsCheck.Checked += (_, _1) => { _config.ShareGameLogs = true; _config.Save(); Utils.Log.Info("Log reports turned on in settings"); };
+            ShareLogsCheck.Unchecked += (_, _1) => { _config.ShareGameLogs = false; _config.Save(); Utils.Log.Info("Log reports turned off in settings"); };
+
             foreach (var f in System.Windows.Media.Fonts.SystemFontFamilies.Select(x => x.Source).OrderBy(x => x))
                 FontCombo.Items.Add(f);
 
@@ -188,7 +192,7 @@ namespace NomisKitchenHDT.UI
                 UpdateStatusText.Text = "Installer launched. Close HDT when it asks.";
             else
             {
-                UpdateStatusText.Text = "Download failed. Opening release page.";
+                UpdateStatusText.Text = (_updater.LastError ?? "Download failed.") + " Opening the release page.";
                 try { System.Diagnostics.Process.Start(_updater.ReleaseUrl ?? "https://github.com/RainWritesCode/NomisKitchenHDT/releases"); } catch { }
             }
             UpdateButton.IsEnabled = true;

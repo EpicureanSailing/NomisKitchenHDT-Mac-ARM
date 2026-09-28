@@ -1,77 +1,56 @@
 using System;
 using System.IO;
-using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using NomisKitchenHDT.Utils;
 
 namespace NomisKitchenHDT.Services
 {
-    /// <summary>Experimental minion dance fix: drops NomiCantDance into BepInEx/plugins when on, removes it when off.</summary>
     public class DanceFixToggle : IDisposable
     {
         private const string EmbeddedResourceName =
             "NomisKitchenHDT.Resources.com.community.hs.NomiCantDance.dll";
         private const string DeployedFileName =
             "com.community.hs.NomiCantDance.dll";
+        private const string ConfigFileName =
+            "com.community.hs.NomiCantDance.cfg";
+
+        private static readonly Regex LogFixesOff =
+            new Regex(@"(?im)^([ \t]*LogFixes[ \t]*=[ \t]*)(?![ \t]*true[ \t]*\r?$)[^\r\n]*");
 
         private readonly PluginConfig _config;
+        private readonly BepInExDeployer _deployer;
         public string LastError { get; private set; }
 
-        public DanceFixToggle(PluginConfig config)
+        public DanceFixToggle(PluginConfig config, BepInExDeployer deployer)
         {
             _config = config;
-        }
-
-        public string ResolvePluginsFolder()
-        {
-            if (!string.IsNullOrEmpty(_config.HearthstoneDir))
-            {
-                var p = Path.Combine(_config.HearthstoneDir, "BepInEx", "plugins");
-                if (Directory.Exists(p)) return p;
-            }
-            foreach (var candidate in new[]
-            {
-                @"C:\Program Files (x86)\Hearthstone",
-                @"C:\Program Files\Hearthstone",
-            })
-            {
-                var p = Path.Combine(candidate, "BepInEx", "plugins");
-                if (Directory.Exists(p)) return p;
-            }
-            return null;
+            _deployer = deployer;
         }
 
         public void SyncWithSetting()
         {
-            var pluginsFolder = ResolvePluginsFolder();
-            if (pluginsFolder == null) { Log.Warn("Dance fix: no Hearthstone BepInEx\\plugins folder found (config HearthstoneDir='" + _config.HearthstoneDir + "')."); return; }
+            LastError = _deployer.Sync(EmbeddedResourceName, DeployedFileName, _config.FixMinionDance);
+            if (_config.FixMinionDance) EnsureLogFixes();
+        }
 
-            var target = Path.Combine(pluginsFolder, DeployedFileName);
+        private void EnsureLogFixes()
+        {
             try
             {
-                LastError = null;
-                if (_config.FixMinionDance) ExtractIfMissing(target);
-                else DeleteIfPresent(target);
+                var plugins = _deployer.PluginsFolder();
+                if (plugins == null) return;
+                var path = Path.GetFullPath(Path.Combine(plugins, "..", "config", ConfigFileName));
+                if (!File.Exists(path)) return;
+                var text = File.ReadAllText(path);
+                if (!LogFixesOff.IsMatch(text)) return;
+                File.WriteAllText(path, LogFixesOff.Replace(text, "${1}true"), new UTF8Encoding(false));
+                Log.Info("Turned LogFixes back on in " + path);
             }
-            catch (Exception ex) { LastError = (ex is UnauthorizedAccessException || ex is IOException) ? "Could not change the dance fix dll. Close Hearthstone and try again." : ex.Message; Log.Error("Dance fix sync failed", ex); }
-        }
-
-        private void ExtractIfMissing(string target)
-        {
-            if (File.Exists(target)) { Log.Info("Dance fix dll already present: " + target); return; }
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(EmbeddedResourceName);
-            if (stream == null) return;
-            using var file = File.Create(target);
-            stream.CopyTo(file);
-            Log.Info("Dance fix dll extracted to: " + target);
-
-            var cache = Path.Combine(Path.GetDirectoryName(target) ?? "", "..", "cache", "chainloader_typeloader.dat");
-            var full = Path.GetFullPath(cache);
-            if (File.Exists(full)) File.Delete(full);
-        }
-
-        private void DeleteIfPresent(string target)
-        {
-            if (File.Exists(target)) { File.Delete(target); Log.Info("Dance fix dll removed: " + target); }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not turn LogFixes on: " + ex.Message);
+            }
         }
 
         public void Dispose() { }

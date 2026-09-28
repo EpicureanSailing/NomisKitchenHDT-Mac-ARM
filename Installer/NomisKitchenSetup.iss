@@ -1,6 +1,6 @@
 #define AppName "Nomi's Kitchen"
 #define AppShortName "NomisKitchenHDT"
-#define AppVersion "1.0.6"
+#define AppVersion "1.0.8"
 #define AppPublisher "RainWritesCode"
 #define AppURL "https://github.com/RainWritesCode/NomisKitchenHDT"
 
@@ -49,6 +49,7 @@ Name: "numfix"; Description: "Disable abbreviation";           Types: full custo
 
 [Files]
 Source: "..\bin\Release\NomisKitchenHDT.dll"; DestDir: "{app}"; Components: hdt; Flags: ignoreversion
+Source: "..\bin\Release\NomisKitchen.Reports.dll"; DestDir: "{app}"; Components: hdt; Flags: ignoreversion
 
 Source: "..\Resources\com.community.hs.NomiHatesAbbreviation.dll"; DestDir: "{code:GetHsDir}\BepInEx\plugins"; \
     Components: numfix; Flags: ignoreversion; \
@@ -58,9 +59,6 @@ Source: "..\Resources\com.community.hs.NomisKitchenApm.dll"; DestDir: "{code:Get
     Components: apm; Flags: ignoreversion; \
     Check: HsDirIsValid
 
-; BepInEx runtime installs automatically whenever a game-side feature (APM or
-; number-fix) is selected and it is not already present. It is not an optional
-; box the user can forget, because APM and number-fix cannot run without it.
 Source: "BepInEx\doorstop_config.ini"; DestDir: "{code:GetHsDir}"; Components: apm numfix; Flags: ignoreversion; Check: NeedBepInEx
 
 Source: "BepInEx\*"; DestDir: "{code:GetHsDir}"; Excludes: "doorstop_config.ini"; \
@@ -185,8 +183,6 @@ begin
       exit;
     end;
 
-    // APM and number-fix cannot work without a valid Hearthstone folder, so do
-    // not let the user proceed with an empty path while those are selected.
     if needsGame and (d = '') then begin
       if not WizardSilent() then MsgBox('The APM overlay needs your Hearthstone folder to install its in-game component.' + #13#10 +
              'Pick the folder that contains Hearthstone.exe (usually in Program Files (x86)\Hearthstone).', mbError, MB_OK);

@@ -1,7 +1,4 @@
 using System;
-using System.IO;
-using System.Reflection;
-using NomisKitchenHDT.Utils;
 
 namespace NomisKitchenHDT.Services
 {
@@ -13,64 +10,18 @@ namespace NomisKitchenHDT.Services
             "com.community.hs.NomiHatesAbbreviation.dll";
 
         private readonly PluginConfig _config;
+        private readonly BepInExDeployer _deployer;
         public string LastError { get; private set; }
 
-        public AbbreviationDisabler(PluginConfig config)
+        public AbbreviationDisabler(PluginConfig config, BepInExDeployer deployer)
         {
             _config = config;
-        }
-
-        public string ResolvePluginsFolder()
-        {
-            if (!string.IsNullOrEmpty(_config.HearthstoneDir))
-            {
-                var p = Path.Combine(_config.HearthstoneDir, "BepInEx", "plugins");
-                if (Directory.Exists(p)) return p;
-            }
-            foreach (var candidate in new[]
-            {
-                @"C:\Program Files (x86)\Hearthstone",
-                @"C:\Program Files\Hearthstone",
-            })
-            {
-                var p = Path.Combine(candidate, "BepInEx", "plugins");
-                if (Directory.Exists(p)) return p;
-            }
-            return null;
+            _deployer = deployer;
         }
 
         public void SyncWithSetting()
         {
-            var pluginsFolder = ResolvePluginsFolder();
-            if (pluginsFolder == null) { Log.Warn("Abbreviation-disabler: no Hearthstone BepInEx\\plugins folder found (config HearthstoneDir='" + _config.HearthstoneDir + "')."); return; }
-
-            var target = Path.Combine(pluginsFolder, DeployedFileName);
-            try
-            {
-                LastError = null;
-                if (_config.DisableAbbreviation) ExtractIfMissing(target);
-                else DeleteIfPresent(target);
-            }
-            catch (Exception ex) { LastError = (ex is UnauthorizedAccessException || ex is IOException) ? "Could not change the abbreviation dll. Close Hearthstone and try again." : ex.Message; Log.Error("Abbreviation-disabler sync failed", ex); }
-        }
-
-        private void ExtractIfMissing(string target)
-        {
-            if (File.Exists(target)) { Log.Info("Abbreviation-disabler dll already present: " + target); return; }
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(EmbeddedResourceName);
-            if (stream == null) return;
-            using var file = File.Create(target);
-            stream.CopyTo(file);
-            Log.Info("Abbreviation-disabler dll extracted to: " + target);
-
-            var cache = Path.Combine(Path.GetDirectoryName(target) ?? "", "..", "cache", "chainloader_typeloader.dat");
-            var full = Path.GetFullPath(cache);
-            if (File.Exists(full)) File.Delete(full);
-        }
-
-        private void DeleteIfPresent(string target)
-        {
-            if (File.Exists(target)) { File.Delete(target); Log.Info("Abbreviation-disabler dll removed: " + target); }
+            LastError = _deployer.Sync(EmbeddedResourceName, DeployedFileName, _config.DisableAbbreviation);
         }
 
         public void Dispose() { }
