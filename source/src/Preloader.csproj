@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net35</TargetFramework>
+    <AssemblyName>BepInEx.Preloader</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)/..=/_/nomi-arm64</PathMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../vendor/BepInEx.Preloader/**/*.cs" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net35" Version="1.0.3" />
+    <Reference Include="BepInEx"><HintPath>../build/runtime/BepInEx/core/BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Harmony"><HintPath>../build/runtime/BepInEx/core/BepInEx.Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>../build/runtime/BepInEx/core/0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>../build/runtime/BepInEx/core/Mono.Cecil.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>../build/runtime/BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>../build/runtime/BepInEx/core/MonoMod.Utils.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="HarmonyXInterop"><HintPath>../build/runtime/BepInEx/core/HarmonyXInterop.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
